@@ -80,7 +80,6 @@ public class KWIC {
         try {
             KWIC kwic = new KWIC(args[0]);
             kwic.outputRotations(args[1]);
-            System.out.println("Rotations written to " + args[1]);
         } catch (IOException e) {
             System.err.println("Error: " + e.getMessage());
         }
