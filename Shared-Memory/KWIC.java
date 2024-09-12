@@ -24,7 +24,7 @@ public class KWIC {
         try (FileReader reader = new FileReader(filePath)) {
             int ch;
             while ((ch = reader.read()) != -1) {
-                charWriter.write(ch);
+                charWriter.write(Character.toLowerCase(ch)); // Convert to lowercase while reading
             }
         }
         return charWriter.toCharArray();
@@ -102,7 +102,17 @@ public class KWIC {
     }
 
     private void sortRotations() {
-        Arrays.sort(rotations, (a, b) -> new String(a).compareTo(new String(b)));
+        Arrays.sort(rotations, (a, b) -> compareCharArrays(a, b));
+    }
+    
+    private int compareCharArrays(char[] a, char[] b) {
+        int length = Math.min(a.length, b.length);
+        for (int i = 0; i < length; i++) {
+            if (a[i] != b[i]) {
+                return a[i] - b[i];
+            }
+        }
+        return a.length - b.length; // If all characters are equal, shorter array comes first
     }
 
     public void outputRotations(String outputPath) throws IOException {
