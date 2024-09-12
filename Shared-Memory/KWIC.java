@@ -1,34 +1,33 @@
-import java.io.BufferedReader;
 import java.io.BufferedWriter;
+import java.io.CharArrayWriter;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.Arrays;
 
 // Run code with "java KWIC input.txt output.txt"
-
 public class KWIC {
     private char[] textData; // Shared memory: text data stored as characters
-    private String[] rotations; // Stores all rotations of the sentence
+    private char[][] rotations; // Stores all rotations as character arrays
 
     public KWIC(String filePath) throws IOException {
-        String text = kwicInput(filePath);
-        textData = text.toLowerCase().toCharArray(); // Convert to lowercase
+        textData = kwicInput(filePath); // Read as char array
         int wordCount = countWords(textData);
-        rotations = new String[wordCount];
-        generateRotations();
-        Arrays.sort(rotations); // Sort after generating rotations
+        rotations = new char[wordCount][];
+        generateRotations(); // Generate the rotations
+        sortRotations(); // Sort the rotations alphabetically
     }
 
-    private String kwicInput(String filePath) throws IOException {
-        StringBuilder content = new StringBuilder();
-        try (BufferedReader reader = new BufferedReader(new FileReader(filePath))) {
-            String line;
-            while ((line = reader.readLine()) != null) {
-                content.append(line).append(" ");
+    // Read file character by character and store in a char array
+    private char[] kwicInput(String filePath) throws IOException {
+        CharArrayWriter charWriter = new CharArrayWriter();
+        try (FileReader reader = new FileReader(filePath)) {
+            int ch;
+            while ((ch = reader.read()) != -1) {
+                charWriter.write(ch);
             }
         }
-        return content.toString().trim();
+        return charWriter.toCharArray();
     }
 
     private int countWords(char[] text) {
@@ -48,23 +47,67 @@ public class KWIC {
     }
 
     private void generateRotations() {
-        String originalText = new String(textData);
-        String[] words = originalText.split("\\s+");
+        char[] originalText = textData;
+        char[][] words = splitWords(originalText);
         int wordCount = words.length;
 
         // Generate all rotations
         for (int i = 0; i < wordCount; i++) {
-            StringBuilder rotation = new StringBuilder();
+            char[] rotation = new char[originalText.length];
+            int position = 0;
             for (int j = 0; j < wordCount; j++) {
-                rotation.append(words[(i + j) % wordCount]).append(" ");
+                char[] word = words[(i + j) % wordCount];
+                System.arraycopy(word, 0, rotation, position, word.length);
+                position += word.length;
+                if (j < wordCount - 1) {
+                    rotation[position++] = ' '; // Add space between words
+                }
             }
-            rotations[i] = rotation.toString().trim();
+            rotations[i] = Arrays.copyOf(rotation, position); // Trim to correct size
         }
+    }
+
+    private char[][] splitWords(char[] text) {
+        CharArrayWriter wordWriter = new CharArrayWriter();
+        CharArrayWriter[] wordsTemp = new CharArrayWriter[text.length]; // Temp storage
+        int wordIndex = 0;
+        boolean inWord = false;
+
+        for (char c : text) {
+            if (Character.isWhitespace(c)) {
+                if (inWord) {
+                    wordsTemp[wordIndex] = new CharArrayWriter();
+                    wordsTemp[wordIndex].write(wordWriter.toCharArray(), 0, wordWriter.size());
+                    wordWriter.reset();
+                    wordIndex++;
+                    inWord = false;
+                }
+            } else {
+                wordWriter.write(c);
+                inWord = true;
+            }
+        }
+        if (inWord) { // Handle the last word
+            wordsTemp[wordIndex] = new CharArrayWriter();
+            wordsTemp[wordIndex].write(wordWriter.toCharArray(), 0, wordWriter.size());
+            wordIndex++;
+        }
+
+        // Convert to fixed array size
+        char[][] words = new char[wordIndex][];
+        for (int i = 0; i < wordIndex; i++) {
+            words[i] = wordsTemp[i].toCharArray();
+        }
+        return words;
+    }
+
+    private void sortRotations() {
+        Arrays.sort(rotations, (a, b) -> new String(a).compareTo(new String(b)));
     }
 
     public void outputRotations(String outputPath) throws IOException {
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(outputPath))) {
-            for (String rotation : rotations) {
+            for (char[] rotation : rotations) {
                 writer.write(rotation);
                 writer.newLine();
             }
